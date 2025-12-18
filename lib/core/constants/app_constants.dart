@@ -1,3 +1,5 @@
+import 'api_keys.dart';
+
 class AppConstants {
   static const String appName = 'AI Recipe Generator';
   static const String appVersion = '1.0.0';
@@ -7,7 +9,7 @@ class AppConstants {
 
   // API (Placeholder - user needs to provide key or we use a configurable one)
   // Using Gemini as default for now
-  static const String geminiApiKey = 'AIzaSyD9Ikd8wvxSTtU8RV7CmpypSNqiXR0dAQY';
+  static const String geminiApiKey = ApiKeys.geminiApiKey;
   static const String geminiBaseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 

@@ -42,4 +42,7 @@ app.*.map.json
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
-/android/app/release
+
+# Security
+lib/core/constants/api_keys.dart
+

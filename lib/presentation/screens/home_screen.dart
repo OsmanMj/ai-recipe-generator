@@ -22,7 +22,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final ingredients = _ingredientsController.text.trim();
     if (ingredients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter specific ingredients!')),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(
+                'Please enter specific ingredients!',
+                style: GoogleFonts.cairo(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.redAccent.withOpacity(0.9),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.all(20),
+          elevation: 4,
+        ),
       );
       return;
     }
@@ -305,21 +326,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
 
                   const SizedBox(height: 40),
-                  SizedBox(
-                    height: 54,
+                  Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
                     child: ElevatedButton.icon(
                       onPressed: _generateRecipes,
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 4,
-                        shadowColor: theme.primaryColor.withOpacity(0.4),
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                       ),
-                      icon: const Icon(Icons.auto_awesome),
-                      label: const Text(
+                      icon: const Icon(Icons.auto_awesome, size: 24),
+                      label: Text(
                         "Generate Recipes",
-                        style: TextStyle(fontSize: 18),
+                        style: GoogleFonts.cairo(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2),
                       ),
                     ),
                   ).animate().fadeIn(delay: 600.ms).moveY(begin: 20, end: 0),
