@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/recipe_provider.dart';
 import '../../core/constants/app_constants.dart';
+import 'onboarding_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -52,6 +53,19 @@ class SettingsScreen extends ConsumerWidget {
                           style: TextStyle(color: Colors.red)),
                     ),
                   ],
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: const Text("How to use the app"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const OnboardingScreen(isFromSettings: true),
                 ),
               );
             },

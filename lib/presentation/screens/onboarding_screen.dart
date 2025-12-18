@@ -6,7 +6,8 @@ import 'main_screen.dart';
 import '../../core/constants/app_constants.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final bool isFromSettings;
+  const OnboardingScreen({super.key, this.isFromSettings = false});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -22,17 +23,17 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     {
       'title': AppConstants.onboardingTitle1,
       'desc': AppConstants.onboardingDesc1,
-      'icon': 'inventory_2',
+      'image': 'assets/images/onboard1.png',
     },
     {
       'title': AppConstants.onboardingTitle2,
       'desc': AppConstants.onboardingDesc2,
-      'icon': 'public',
+      'image': 'assets/images/onboard2.png',
     },
     {
       'title': AppConstants.onboardingTitle3,
       'desc': AppConstants.onboardingDesc3,
-      'icon': 'soup_kitchen',
+      'image': 'assets/images/onboard3.png',
     },
   ];
 
@@ -78,6 +79,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _finishOnboarding() async {
     _timerController.stop();
+
+    if (widget.isFromSettings) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('seenOnboarding', true);
     if (!mounted) return;
@@ -99,57 +107,50 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Timer and Skip Button
-            AnimatedBuilder(
-              animation: _timerController,
-              builder: (context, child) {
-                return LinearProgressIndicator(
-                  value: _timerController.value,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation(
-                    Theme.of(context).primaryColor,
+      body: Stack(
+        children: [
+          // Full Screen PageView
+          PageView.builder(
+            controller: _controller,
+            onPageChanged: _onPageChanged,
+            itemCount: _pages.length,
+            itemBuilder: (context, index) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Background Image
+                  Image.asset(
+                    _pages[index]['image']!,
+                    fit: BoxFit.cover,
                   ),
-                );
-              },
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _finishOnboarding,
-                child: Text(
-                  'Skip',
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.bold,
+                  // Gradient Overlay for Text Visibility
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.1),
+                          Colors.black.withOpacity(0.6),
+                          Colors.black.withOpacity(0.9),
+                        ],
+                        stops: const [0.0, 0.6, 1.0],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                onPageChanged: _onPageChanged,
-                itemCount: _pages.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.all(32.0),
+                  // Text Content
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Icon(
-                          _getIconData(_pages[index]['icon']!),
-                          size: 150,
-                          color: Theme.of(context).primaryColor,
-                        ).animate().scale(duration: 600.ms),
-                        const SizedBox(height: 40),
                         Text(
                           _pages[index]['title']!,
                           style: GoogleFonts.cairo(
-                            fontSize: 32,
+                            fontSize: 36,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1.2,
                           ),
                           textAlign: TextAlign.center,
                         )
@@ -161,85 +162,132 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           _pages[index]['desc']!,
                           style: GoogleFonts.cairo(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: Colors.white.withOpacity(0.9),
+                            height: 1.4,
                           ),
                           textAlign: TextAlign.center,
                         ).animate().fadeIn(delay: 400.ms),
+                        const SizedBox(
+                            height: 150), // Space for bottom controls
                       ],
                     ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  ),
+                ],
+              );
+            },
+          ),
+
+          // Top Controls (Timer & Skip)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Column(
                 children: [
-                  // Indicators
-                  Row(
-                    children: List.generate(
-                      _pages.length,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.only(right: 8),
-                        height: 10,
-                        width: _currentPage == index ? 30 : 10,
-                        decoration: BoxDecoration(
-                          color: _currentPage == index
-                              ? Theme.of(context).primaryColor
-                              : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(5),
+                  AnimatedBuilder(
+                    animation: _timerController,
+                    builder: (context, child) {
+                      return LinearProgressIndicator(
+                        value: _timerController.value,
+                        backgroundColor: Colors.white12,
+                        minHeight: 4,
+                        valueColor: const AlwaysStoppedAnimation(Colors.white),
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8.0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _finishOnboarding,
+                        child: Text(
+                          'Skip',
+                          style: GoogleFonts.cairo(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  // Standard Next/Start Button
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_currentPage == _pages.length - 1) {
-                        _finishOnboarding();
-                      } else {
-                        _controller.nextPage(
-                          duration: const Duration(milliseconds: 500),
-                          curve: Curves.ease,
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Text(
-                      _currentPage == _pages.length - 1 ? 'Start' : 'Next',
-                      style: const TextStyle(fontSize: 16),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          // Bottom Controls (Indicators & Button)
+          Positioned(
+            bottom: 40,
+            left: 24,
+            right: 24,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Indicators
+                Row(
+                  children: List.generate(
+                    _pages.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.only(right: 8),
+                      height: 8,
+                      width: _currentPage == index ? 30 : 8,
+                      decoration: BoxDecoration(
+                        color: _currentPage == index
+                            ? Colors.white
+                            : Colors.white38,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+                // Next/Start Button
+                ElevatedButton(
+                  onPressed: () {
+                    if (_currentPage == _pages.length - 1) {
+                      _finishOnboarding();
+                    } else {
+                      _controller.nextPage(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.ease,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    _currentPage == _pages.length - 1
+                        ? 'Start Cooking'
+                        : 'Next',
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  IconData _getIconData(String name) {
-    // Simple mapper
-    switch (name) {
-      case 'inventory_2':
-        return Icons.inventory_2;
-      case 'public':
-        return Icons.public;
-      case 'soup_kitchen':
-        return Icons.soup_kitchen;
-      default:
-        return Icons.star;
-    }
-  }
+  // _getIconData method is no longer needed but was part of the chunk.
+  // It will be effectively removed by this replacement covering the class body.
 }
