@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../core/constants/app_constants.dart';
 import '../models/recipe_model.dart';
 
@@ -39,45 +40,132 @@ class RecipeRemoteDataSourceImpl implements RecipeRemoteDataSource {
       """;
 
       const apiKey = AppConstants.geminiApiKey;
-      const baseUrl = AppConstants.geminiBaseUrl;
 
-      final response = await dio.post(
-        '$baseUrl?key=$apiKey',
-        options: Options(
-          validateStatus: (status) => true,
-        ),
-        data: {
-          "contents": [
-            {
-              "parts": [
-                {"text": prompt}
-              ]
-            }
-          ]
-        },
-      );
+      // Get the correct endpoint with rotation
+      final endpointUrl = await _getAndRotateEndpoint(apiKey);
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        String contentText =
-            data['candidates'][0]['content']['parts'][0]['text'];
-
-        contentText =
-            contentText.replaceAll('```json', '').replaceAll('```', '').trim();
-
-        final List<dynamic> jsonList = jsonDecode(contentText);
-
-        return jsonList.map((json) => RecipeModel.fromJson(json)).toList();
-      } else {
-        print("API Error Status: ${response.statusCode}");
-        print("API Error Body: ${response.data}");
-        throw Exception(
-            'Failed to generate recipes: ${response.statusCode} - ${response.data}');
+      try {
+        return await _makeRequest(endpointUrl, prompt);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 429) {
+          // Rate limit exceeded, force rotate and retry once
+          final newEndpointUrl =
+              await _getAndRotateEndpoint(apiKey, forceRotate: true);
+          return await _makeRequest(newEndpointUrl, prompt);
+        }
+        rethrow;
       }
     } catch (e) {
       print("API Error: $e");
       return _generateMockRecipes(ingredients, cuisine, calories);
     }
+  }
+
+  Future<List<RecipeModel>> _makeRequest(String url, String prompt) async {
+    final response = await dio.post(
+      url,
+      options: Options(
+        validateStatus: (status) => true,
+      ),
+      data: {
+        "contents": [
+          {
+            "parts": [
+              {"text": prompt}
+            ]
+          }
+        ]
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = response.data;
+      String contentText = data['candidates'][0]['content']['parts'][0]['text'];
+
+      contentText =
+          contentText.replaceAll('```json', '').replaceAll('```', '').trim();
+
+      final dynamic jsonResponse = jsonDecode(contentText);
+
+      List<dynamic> jsonList;
+      if (jsonResponse is List) {
+        jsonList = jsonResponse;
+      } else if (jsonResponse is Map && jsonResponse.containsKey('recipes')) {
+        // Handle case where AI wraps it in {"recipes": [...]}
+        jsonList = jsonResponse['recipes'];
+      } else if (jsonResponse is Map) {
+        // Try to find any list in values
+        final entry = jsonResponse.values
+            .firstWhere((v) => v is List, orElse: () => null);
+        if (entry != null) {
+          jsonList = entry;
+        } else {
+          throw FormatException(
+              "Unexpected JSON format: not a list or object with list");
+        }
+      } else {
+        throw FormatException(
+            "Unexpected JSON type: ${jsonResponse.runtimeType}");
+      }
+
+      return jsonList.map((json) => RecipeModel.fromJson(json)).toList();
+    } else if (response.statusCode == 429) {
+      // Rethrow to be caught by the outer loop for rotation
+      throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse);
+    } else {
+      print("API Error Status: ${response.statusCode}");
+      print("API Error Body: ${response.data}");
+      throw Exception(
+          'Failed to generate recipes: ${response.statusCode} - ${response.data}');
+    }
+  }
+
+  Future<String> _getAndRotateEndpoint(String apiKey,
+      {bool forceRotate = false}) async {
+    // Open a box for tracking usage.
+    // Lazily opening here to avoid main.dart clutter, though not ideal for tight loops (ok for user action).
+    if (!Hive.isBoxOpen('api_usage')) {
+      await Hive.openBox('api_usage');
+    }
+    final box = Hive.box('api_usage');
+
+    int currentModelIndex =
+        box.get('current_model_index', defaultValue: 0) as int;
+
+    // Validate index against current list length (in case models were removed)
+    if (currentModelIndex >= AppConstants.geminiModels.length) {
+      currentModelIndex = 0;
+      await box.put('current_model_index', currentModelIndex);
+    }
+
+    int requestCount = box.get('request_count', defaultValue: 0) as int;
+
+    // Check rotation condition
+    bool shouldRotate = forceRotate || requestCount >= 15;
+
+    if (shouldRotate) {
+      currentModelIndex =
+          (currentModelIndex + 1) % AppConstants.geminiModels.length;
+      requestCount = 0;
+      await box.put('current_model_index', currentModelIndex);
+      await box.put('request_count', requestCount);
+      print(
+          "Rotating API Model to index $currentModelIndex due to ${forceRotate ? '429 Error' : 'Limit Reached'}");
+    }
+
+    if (!forceRotate) {
+      // Increment usage if not just forcing a new one for a retry
+      // Actually we should increment ONLY on success, but incrementing on attempt is safer for rate limits.
+      // But here we just want to know "when to switch next".
+      // Let's increment now.
+      await box.put('request_count', requestCount + 1);
+    }
+
+    final modelName = AppConstants.geminiModels[currentModelIndex];
+    return '${AppConstants.geminiBaseUrl}$modelName:generateContent?key=$apiKey';
   }
 
   List<RecipeModel> _generateMockRecipes(

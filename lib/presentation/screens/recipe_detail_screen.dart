@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/services/pdf_service.dart';
 import '../../data/models/recipe_model.dart';
 import '../providers/recipe_provider.dart';
 
@@ -204,10 +206,11 @@ class RecipeDetailScreen extends ConsumerWidget {
       children: [
         _buildActionButton(
           context,
-          icon: Icons.restaurant_menu,
-          label: "Cook",
-          onTap: () {
-            // Placeholder: Maybe scroll to instructions
+          icon: Icons.print_rounded,
+          label: "Print PDF",
+          onTap: () async {
+            final pdfService = PdfService();
+            await pdfService.generateAndPrint(recipe);
           },
           defaultColor: textColor,
         ),

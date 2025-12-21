@@ -37,7 +37,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
   }
 
   void _startTextRotation() {
-    _textTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    _textTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
       if (mounted) {
         setState(() {
           _currentIndex = (_currentIndex + 1) % _loadingTexts.length;
