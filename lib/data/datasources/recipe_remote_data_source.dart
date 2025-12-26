@@ -82,8 +82,40 @@ class RecipeRemoteDataSourceImpl implements RecipeRemoteDataSource {
       final data = response.data;
       String contentText = data['candidates'][0]['content']['parts'][0]['text'];
 
-      contentText =
-          contentText.replaceAll('```json', '').replaceAll('```', '').trim();
+      // Robust JSON extraction
+      final jsonStartIndex = contentText.indexOf('{');
+      final listStartIndex = contentText.indexOf('[');
+
+      int startIndex = -1;
+
+      // Determine if we should look for an object or a list
+      if (jsonStartIndex != -1 && listStartIndex != -1) {
+        startIndex =
+            jsonStartIndex < listStartIndex ? jsonStartIndex : listStartIndex;
+      } else if (jsonStartIndex != -1) {
+        startIndex = jsonStartIndex;
+      } else if (listStartIndex != -1) {
+        startIndex = listStartIndex;
+      }
+
+      if (startIndex != -1) {
+        // Find the last closing bracket
+        final jsonEndIndex = contentText.lastIndexOf('}');
+        final listEndIndex = contentText.lastIndexOf(']');
+
+        int endIndex = -1;
+        if (jsonEndIndex != -1 && listEndIndex != -1) {
+          endIndex = jsonEndIndex > listEndIndex ? jsonEndIndex : listEndIndex;
+        } else if (jsonEndIndex != -1) {
+          endIndex = jsonEndIndex;
+        } else if (listEndIndex != -1) {
+          endIndex = listEndIndex;
+        }
+
+        if (endIndex != -1 && endIndex > startIndex) {
+          contentText = contentText.substring(startIndex, endIndex + 1);
+        }
+      }
 
       final dynamic jsonResponse = jsonDecode(contentText);
 

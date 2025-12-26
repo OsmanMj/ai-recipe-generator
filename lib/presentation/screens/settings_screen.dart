@@ -66,13 +66,14 @@ class SettingsScreen extends ConsumerWidget {
                       style: GoogleFonts.cairo(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color:
+                            theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     // Chef Level Card (Advanced Design)
                     Container(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -128,13 +129,13 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                                 child: Image.asset(
                                   chefImage,
-                                  height: 80,
-                                  width: 80,
+                                  height: 50,
+                                  width: 50,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 10),
                           // Progress Bar
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +180,7 @@ class SettingsScreen extends ConsumerWidget {
                         ],
                       ),
                     ).animate().fadeIn().slideY(begin: 0.2, end: 0),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 14),
                     Text(
                       "Cuisine Breakdown",
                       style: GoogleFonts.cairo(
@@ -189,12 +190,14 @@ class SettingsScreen extends ConsumerWidget {
                             theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     // Cuisine Circular Indicators
                     cuisineCounts.isEmpty
                         ? Text(
                             "Save recipes to see your tastes!",
-                            style: GoogleFonts.cairo(color: Colors.grey),
+                            style: GoogleFonts.cairo(
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.7)),
                           )
                         : SizedBox(
                             height: 140,
@@ -214,7 +217,7 @@ class SettingsScreen extends ConsumerWidget {
                                     Brightness.dark;
 
                                 return Container(
-                                  width: 110,
+                                  width: 100,
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 16, horizontal: 8),
                                   decoration: BoxDecoration(
@@ -312,8 +315,6 @@ class SettingsScreen extends ConsumerWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 24),
                 title: Text("Dark Mode",
                     style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
-                subtitle: Text("Enable dark theme",
-                    style: GoogleFonts.cairo(color: Colors.grey)),
                 value: Theme.of(context).brightness == Brightness.dark,
                 activeColor: theme.primaryColor,
                 onChanged: (val) {
@@ -338,31 +339,8 @@ class SettingsScreen extends ConsumerWidget {
                   _showClearConfirmation(context, ref);
                 },
               ),
-              ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child:
-                      const Icon(Icons.help_outline, color: Colors.blueAccent),
-                ),
-                title: Text("How to use",
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const OnboardingScreen(isFromSettings: true),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 10),
               Center(
                 child: Text(
                   "Version ${AppConstants.appVersion}",
