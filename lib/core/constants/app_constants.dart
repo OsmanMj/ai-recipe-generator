@@ -2,7 +2,7 @@ import 'api_keys.dart';
 
 class AppConstants {
   static const String appName = 'AI Recipe Generator';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.1.2';
 
   // Hive Boxes
   static const String favoritesBox = 'favorites_box';
